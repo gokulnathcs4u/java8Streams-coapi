@@ -8,7 +8,7 @@
 		<version>2.6.6</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.java8streams.coapi</groupId>
+	<groupId>com.java8streams</groupId>
 	<artifactId>java8streams.coapi</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>java8streams-coapi</name>
