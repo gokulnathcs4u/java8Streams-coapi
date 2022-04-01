@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -56,6 +57,48 @@ public class CoApiController {
 		CoApiResponse resp = new CoApiResponse();
 		try {
 			resp = coApiService.getAllByByCountryAndProvince();
+		} catch (ApiException exception) {
+			throw new CoApiException(exception.getErrorBo().getErrorCode(), exception.getErrorBo().getDescription(),
+					exception);
+		} catch (Exception exception) {
+			throw new CoApiException(HttpStatus.SERVICE_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(),
+					exception);
+		}
+		return new ResponseEntity<CoApiResponse>(resp, resp.getStatus());
+	}
+	
+	/**
+	 * 
+	 * @return
+	 * @throws CoApiException
+	 */
+	@GetMapping("/all/countries")
+	public ResponseEntity<CoApiResponse> getAllCountriesNames() throws CoApiException {
+		CoApiResponse resp = new CoApiResponse();
+		try {
+			resp = coApiService.getAllCountriesNames();
+		} catch (ApiException exception) {
+			throw new CoApiException(exception.getErrorBo().getErrorCode(), exception.getErrorBo().getDescription(),
+					exception);
+		} catch (Exception exception) {
+			throw new CoApiException(HttpStatus.SERVICE_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(),
+					exception);
+		}
+		return new ResponseEntity<CoApiResponse>(resp, resp.getStatus());
+	}
+	
+	
+	/**
+	 * 
+	 * @param name
+	 * @return
+	 * @throws CoApiException
+	 */
+	@GetMapping("/all/countries/{name}")
+	public ResponseEntity<CoApiResponse> getCountryByName(@PathVariable String name) throws CoApiException {
+		CoApiResponse resp = new CoApiResponse();
+		try {
+			resp = coApiService.getCountryByName(name);
 		} catch (ApiException exception) {
 			throw new CoApiException(exception.getErrorBo().getErrorCode(), exception.getErrorBo().getDescription(),
 					exception);

@@ -7,6 +7,7 @@ import static java.util.stream.Collectors.reducing;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
@@ -20,6 +21,8 @@ import com.java8streams.exception.ApiException;
 import com.java8streams.exception.ErrorBo;
 import com.java8streams.model.CoApi;
 import com.java8streams.model.CoApiStatus;
+import com.java8streams.model.Country;
+import com.java8streams.model.CountryList;
 import com.java8streams.response.CoApiResponse;
 
 /**
@@ -91,16 +94,78 @@ public class CoApiService {
 						.collect(groupingBy(CoApi::getCountryRegion, groupingBy((CoApi api) -> {
 							return api.getProvinceState() != null ? api.getProvinceState() : api.getCombinedKey();
 						}, mapping((CoApi api) -> {
-							return new CoApiStatus(api.getConfirmed() != null ? api.getConfirmed() : 0, api.getDeaths() != null ? api.getDeaths() : 0, 
-									api.getRecovered() != null ? api.getRecovered() : 0, api.getActive() != null ? api.getActive() : 0);
+							return new CoApiStatus(api.getConfirmed() != null ? api.getConfirmed() : 0,
+									api.getDeaths() != null ? api.getDeaths() : 0,
+									api.getRecovered() != null ? api.getRecovered() : 0,
+									api.getActive() != null ? api.getActive() : 0);
 						}, reducing(new CoApiStatus(0l, 0l, 0l, 0l), (api1, api2) -> {
-							return new CoApiStatus(api1.getConfirmed()+api2.getConfirmed(), api1.getDeaths()+api2.getDeaths(), 
-									api1.getRecovered()+api2.getRecovered(), api1.getActive()+api2.getActive());
+							return new CoApiStatus(api1.getConfirmed() + api2.getConfirmed(),
+									api1.getDeaths() + api2.getDeaths(), api1.getRecovered() + api2.getRecovered(),
+									api1.getActive() + api2.getActive());
 						})))));
 				resp.setValues(coapiGropuByRegionProvinceMap);
 				resp.setCount(coapiGropuByRegionProvinceMap.size());
 			} catch (Exception exception) {
 				throw new ApiException(new ErrorBo(HttpStatus.SERVICE_UNAVAILABLE, exception.getLocalizedMessage()));
+			}
+			return resp;
+		} else {
+			throw new ApiException(
+					new ErrorBo(HttpStatus.SERVICE_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase()));
+		}
+	}
+
+	/**
+	 * 
+	 * @return
+	 * @throws ApiException
+	 */
+	public CoApiResponse getAllCountriesNames() throws ApiException {
+		ResponseEntity<CountryList> responseEntity = restTemplate
+				.exchange(coApiUrl.getHostName() + coApiUrl.getCountries(), HttpMethod.GET, null, CountryList.class);
+
+		if (Objects.nonNull(responseEntity)) {
+			CoApiResponse resp = new CoApiResponse();
+			if (responseEntity.getStatusCode().is2xxSuccessful()) {
+				resp.setStatus(responseEntity.getStatusCode());
+				CountryList respVal = responseEntity.getBody();
+				resp.setValues(respVal);
+				resp.setCount(respVal.getCountries().size());
+			} else {
+				throw new ApiException(
+						new ErrorBo(responseEntity.getStatusCode(), responseEntity.getStatusCode().getReasonPhrase()));
+			}
+			return resp;
+		} else {
+			throw new ApiException(
+					new ErrorBo(HttpStatus.SERVICE_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase()));
+		}
+	}
+
+	/**
+	 * 
+	 * @param name
+	 * @return
+	 * @throws ApiException
+	 */
+	public CoApiResponse getCountryByName(String name) throws ApiException {
+		ResponseEntity<CountryList> responseEntity = restTemplate
+				.exchange(coApiUrl.getHostName() + coApiUrl.getCountries(), HttpMethod.GET, null, CountryList.class);
+
+		if (Objects.nonNull(responseEntity)) {
+			CoApiResponse resp = new CoApiResponse();
+			if (responseEntity.getStatusCode().is2xxSuccessful()) {
+				resp.setStatus(responseEntity.getStatusCode());
+				CountryList respVal = responseEntity.getBody();
+
+				List<Country> countryList = respVal.getCountries().stream().collect(
+						Collectors.filtering((country) -> country.getName().contains(name), Collectors.toList()));
+
+				resp.setValues(countryList);
+				resp.setCount(countryList.size());
+			} else {
+				throw new ApiException(
+						new ErrorBo(responseEntity.getStatusCode(), responseEntity.getStatusCode().getReasonPhrase()));
 			}
 			return resp;
 		} else {
