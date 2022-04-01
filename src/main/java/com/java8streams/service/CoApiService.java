@@ -1,9 +1,11 @@
 package com.java8streams.service;
 
+import static java.util.stream.Collectors.filtering;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.reducing;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -15,6 +17,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.comparator.Comparators;
 import org.springframework.web.client.RestTemplate;
 
 import com.java8streams.exception.ApiException;
@@ -158,14 +161,65 @@ public class CoApiService {
 				resp.setStatus(responseEntity.getStatusCode());
 				CountryList respVal = responseEntity.getBody();
 
-				List<Country> countryList = respVal.getCountries().stream().collect(
-						Collectors.filtering((country) -> country.getName().contains(name), Collectors.toList()));
+				List<Country> countryList = respVal.getCountries().stream()
+						.collect(filtering((country) -> country.getName().contains(name), Collectors.toList()));
 
 				resp.setValues(countryList);
 				resp.setCount(countryList.size());
 			} else {
 				throw new ApiException(
 						new ErrorBo(responseEntity.getStatusCode(), responseEntity.getStatusCode().getReasonPhrase()));
+			}
+			return resp;
+		} else {
+			throw new ApiException(
+					new ErrorBo(HttpStatus.SERVICE_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase()));
+		}
+	}
+
+	/**
+	 * 
+	 * @param name
+	 * @param filterVal
+	 * @return
+	 * @throws ApiException
+	 */
+	public CoApiResponse getCountryByName(String name, String filterVal) throws ApiException {
+		ResponseEntity<List<CoApi>> responseEntity = restTemplate.exchange(
+				coApiUrl.getHostName() + coApiUrl.getConfirmed(), HttpMethod.GET, null,
+				new ParameterizedTypeReference<List<CoApi>>() {
+				});
+		List<CoApi> coList = null;
+		if (Objects.nonNull(responseEntity)) {
+			CoApiResponse resp = new CoApiResponse();
+			if (responseEntity.getStatusCode().is2xxSuccessful()) {
+				resp.setStatus(responseEntity.getStatusCode());
+				coList = responseEntity.getBody();
+			} else {
+				throw new ApiException(
+						new ErrorBo(responseEntity.getStatusCode(), responseEntity.getStatusCode().getReasonPhrase()));
+			}
+			try {
+				Comparator<CoApiStatus> coapiComparator = Comparator.comparing(CoApiStatus::getConfirmed).reversed();
+				if(filterVal.contentEquals("deaths")) {
+					coapiComparator = Comparator.comparing(CoApiStatus::getDeaths).reversed();
+				} else if(filterVal.contentEquals("active")) {
+					coapiComparator = Comparator.comparing(CoApiStatus::getDeaths).reversed();
+				}
+				Comparator<CoApiStatus> coapiComparatorFinal = coapiComparator;
+				Map<String, List<CoApiStatus>> respList = coList.stream()
+						.collect(groupingBy(api -> api.getProvinceState() != null ? api.getProvinceState() : api.getCombinedKey() ,Collectors.collectingAndThen(filtering(coapi -> coapi.getIso3() != null && coapi.getIso3().equalsIgnoreCase(name),
+								mapping(api -> new CoApiStatus(api.getConfirmed() != null ? api.getConfirmed() : 0,
+										api.getDeaths() != null ? api.getDeaths() : 0,
+										api.getRecovered() != null ? api.getRecovered() : 0,
+										api.getActive() != null ? api.getActive() : 0), Collectors.toList())), 
+								(List<CoApiStatus> apiList) -> apiList.stream().sorted(coapiComparatorFinal).collect(Collectors.toList()))));
+
+				resp.setValues(respList);
+				resp.setCount(respList.size());
+
+			} catch (Exception exception) {
+				throw new ApiException(new ErrorBo(HttpStatus.SERVICE_UNAVAILABLE, exception.getLocalizedMessage()));
 			}
 			return resp;
 		} else {
