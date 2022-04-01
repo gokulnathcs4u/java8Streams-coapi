@@ -28,15 +28,11 @@ public class CoApiController {
 
 	/**
 	 * 
-	 * @param yesterday
-	 * @param twoDaysAgo
-	 * @param allowNull
 	 * @return
 	 * @throws CoApiException
 	 */
 	@GetMapping("/all/byCountry")
-	public ResponseEntity<CoApiResponse> getAllByByCountry()
-			throws CoApiException {
+	public ResponseEntity<CoApiResponse> getAllByByCountry() throws CoApiException {
 		CoApiResponse resp = new CoApiResponse();
 		try {
 			resp = coApiService.getAllByByCountry();
@@ -50,5 +46,24 @@ public class CoApiController {
 		return new ResponseEntity<CoApiResponse>(resp, resp.getStatus());
 	}
 
-	
+	/**
+	 * 
+	 * @return
+	 * @throws CoApiException
+	 */
+	@GetMapping("/all/byCountryAndProvince")
+	public ResponseEntity<CoApiResponse> getAllByByCountryAndProvince() throws CoApiException {
+		CoApiResponse resp = new CoApiResponse();
+		try {
+			resp = coApiService.getAllByByCountryAndProvince();
+		} catch (ApiException exception) {
+			throw new CoApiException(exception.getErrorBo().getErrorCode(), exception.getErrorBo().getDescription(),
+					exception);
+		} catch (Exception exception) {
+			throw new CoApiException(HttpStatus.SERVICE_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(),
+					exception);
+		}
+		return new ResponseEntity<CoApiResponse>(resp, resp.getStatus());
+	}
+
 }
