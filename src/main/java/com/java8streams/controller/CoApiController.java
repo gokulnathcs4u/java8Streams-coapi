@@ -29,15 +29,15 @@ public class CoApiController {
 	private CoApiService coApiService;
 
 	/**
-	 * 
+	 * Get details of all countires 
 	 * @return
 	 * @throws CoApiException
 	 */
-	@GetMapping("/all/byCountry")
-	public ResponseEntity<CoApiResponse> getAllByByCountry() throws CoApiException {
+	@GetMapping("/all/details")
+	public ResponseEntity<CoApiResponse> getAllDetails() throws CoApiException {
 		CoApiResponse resp = new CoApiResponse();
 		try {
-			resp = coApiService.getAllByByCountry();
+			resp = coApiService.getAllDetails();
 		} catch (ApiException exception) {
 			throw new CoApiException(exception.getErrorBo().getErrorCode(), exception.getErrorBo().getDescription(),
 					exception);
@@ -118,7 +118,8 @@ public class CoApiController {
 	 * @throws CoApiException
 	 */
 	@GetMapping("/countries/details/{name}")
-	public ResponseEntity<CoApiResponse> getCountryByName(@PathVariable(required = true) String name, @RequestParam(required = true) String filterVal) throws CoApiException {
+	public ResponseEntity<CoApiResponse> getCountryByName(@PathVariable(required = true) String name, 
+			@RequestParam(required = true) String filterVal) throws CoApiException {
 		CoApiResponse resp = new CoApiResponse();
 		try {
 			resp = coApiService.getCountryByName(name, filterVal);

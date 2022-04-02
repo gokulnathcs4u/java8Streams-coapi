@@ -1,11 +1,15 @@
 package com.java8streams.service;
 
+import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.filtering;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.reducing;
+import static java.util.stream.Collectors.summingLong;
+import static java.util.stream.Collectors.toMap;
 
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -17,7 +21,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.util.comparator.Comparators;
 import org.springframework.web.client.RestTemplate;
 
 import com.java8streams.exception.ApiException;
@@ -47,7 +50,7 @@ public class CoApiService {
 	 * @return
 	 * @throws ApiException
 	 */
-	public CoApiResponse getAllByByCountry() throws ApiException {
+	public CoApiResponse getAllDetails() throws ApiException {
 		ResponseEntity<List<CoApi>> responseEntity = restTemplate.exchange(
 				coApiUrl.getHostName() + coApiUrl.getConfirmed(), HttpMethod.GET, null,
 				new ParameterizedTypeReference<List<CoApi>>() {
@@ -86,26 +89,23 @@ public class CoApiService {
 			if (responseEntity.getStatusCode().is2xxSuccessful()) {
 				resp.setStatus(responseEntity.getStatusCode());
 				coList = responseEntity.getBody();
-				resp.setValues(coList);
-				resp.setCount(coList.size());
 			} else {
 				throw new ApiException(
 						new ErrorBo(responseEntity.getStatusCode(), responseEntity.getStatusCode().getReasonPhrase()));
 			}
 			try {
-				Map<String, Map<String, CoApiStatus>> coapiGropuByRegionProvinceMap = coList.stream()
-						.collect(groupingBy(CoApi::getCountryRegion, groupingBy((CoApi api) -> {
+				Map<String, Object> coapiGropuByRegionProvinceMap = coList.stream()
+						.collect(groupingBy(CoApi::getCountryRegion, collectingAndThen(groupingBy((CoApi api) -> {
 							return api.getProvinceState() != null ? api.getProvinceState() : api.getCombinedKey();
 						}, mapping((CoApi api) -> {
 							return new CoApiStatus(api.getConfirmed() != null ? api.getConfirmed() : 0,
 									api.getDeaths() != null ? api.getDeaths() : 0,
 									api.getRecovered() != null ? api.getRecovered() : 0,
 									api.getActive() != null ? api.getActive() : 0);
-						}, reducing(new CoApiStatus(0l, 0l, 0l, 0l), (api1, api2) -> {
-							return new CoApiStatus(api1.getConfirmed() + api2.getConfirmed(),
-									api1.getDeaths() + api2.getDeaths(), api1.getRecovered() + api2.getRecovered(),
-									api1.getActive() + api2.getActive());
-						})))));
+						}, reducing(new CoApiStatus(0l, 0l, 0l, 0l), (oldval, newval) -> newval))), 
+								(Map<String, CoApiStatus> unsortedMap) -> 
+						unsortedMap.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.comparing(CoApiStatus::getConfirmed).reversed()))
+						.collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (oldval, newval) -> newval, LinkedHashMap::new))) ));
 				resp.setValues(coapiGropuByRegionProvinceMap);
 				resp.setCount(coapiGropuByRegionProvinceMap.size());
 			} catch (Exception exception) {
@@ -200,20 +200,13 @@ public class CoApiService {
 						new ErrorBo(responseEntity.getStatusCode(), responseEntity.getStatusCode().getReasonPhrase()));
 			}
 			try {
-				Comparator<CoApiStatus> coapiComparator = Comparator.comparing(CoApiStatus::getConfirmed).reversed();
-				if(filterVal.contentEquals("deaths")) {
-					coapiComparator = Comparator.comparing(CoApiStatus::getDeaths).reversed();
-				} else if(filterVal.contentEquals("active")) {
-					coapiComparator = Comparator.comparing(CoApiStatus::getDeaths).reversed();
-				}
-				Comparator<CoApiStatus> coapiComparatorFinal = coapiComparator;
-				Map<String, List<CoApiStatus>> respList = coList.stream()
-						.collect(groupingBy(api -> api.getProvinceState() != null ? api.getProvinceState() : api.getCombinedKey() ,Collectors.collectingAndThen(filtering(coapi -> coapi.getIso3() != null && coapi.getIso3().equalsIgnoreCase(name),
-								mapping(api -> new CoApiStatus(api.getConfirmed() != null ? api.getConfirmed() : 0,
-										api.getDeaths() != null ? api.getDeaths() : 0,
-										api.getRecovered() != null ? api.getRecovered() : 0,
-										api.getActive() != null ? api.getActive() : 0), Collectors.toList())), 
-								(List<CoApiStatus> apiList) -> apiList.stream().sorted(coapiComparatorFinal).collect(Collectors.toList()))));
+				Map<String, Long> respList = coList.stream()
+					.collect(filtering(coapi -> coapi.getIso3() != null && coapi.getIso3().equalsIgnoreCase(name),
+								collectingAndThen(groupingBy((CoApi api) -> api.getProvinceState() != null ? api.getProvinceState()	: api.getCombinedKey(),
+								 mapping(filterVal.contentEquals("deaths")? CoApi::getDeaths : filterVal.contentEquals("active") ? CoApi::getActive : CoApi::getConfirmed, 
+									summingLong(sumVal -> sumVal))), (Map<String, Long> unsortedMap) -> 
+											unsortedMap.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+													.collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (oldval, newval) -> oldval, LinkedHashMap::new)))));
 
 				resp.setValues(respList);
 				resp.setCount(respList.size());
