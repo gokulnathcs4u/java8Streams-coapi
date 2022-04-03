@@ -8,6 +8,8 @@ import static java.util.stream.Collectors.reducing;
 import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toMap;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,6 +28,7 @@ import org.springframework.web.client.RestTemplate;
 import com.java8streams.exception.ApiException;
 import com.java8streams.exception.ErrorBo;
 import com.java8streams.model.CoApi;
+import com.java8streams.model.CoApiDaily;
 import com.java8streams.model.CoApiStatus;
 import com.java8streams.model.Country;
 import com.java8streams.model.CountryList;
@@ -61,7 +64,7 @@ public class CoApiService {
 			if (responseEntity.getStatusCode().is2xxSuccessful()) {
 				resp.setStatus(responseEntity.getStatusCode());
 				resp.setValues(responseEntity.getBody());
-				resp.setCount(1);
+				resp.setCount(responseEntity.getBody().size());
 			} else {
 				throw new ApiException(
 						new ErrorBo(responseEntity.getStatusCode(), responseEntity.getStatusCode().getReasonPhrase()));
@@ -213,6 +216,35 @@ public class CoApiService {
 
 			} catch (Exception exception) {
 				throw new ApiException(new ErrorBo(HttpStatus.SERVICE_UNAVAILABLE, exception.getLocalizedMessage()));
+			}
+			return resp;
+		} else {
+			throw new ApiException(
+					new ErrorBo(HttpStatus.SERVICE_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase()));
+		}
+	}
+
+	/**
+	 * 
+	 * @param getDailyDetailsByDate
+	 * @return
+	 * @throws ApiException 
+	 */
+	public CoApiResponse getDailyDetailsByDate(String getDailyDetailsByDate) throws ApiException {
+		LocalDate date = LocalDate.parse(getDailyDetailsByDate, DateTimeFormatter.ofPattern("MM-dd-yyyy"));
+		ResponseEntity<List<CoApiDaily>> responseEntity = restTemplate
+				.exchange(coApiUrl.getHostName() + coApiUrl.getDaily(), HttpMethod.GET, null, new ParameterizedTypeReference<List<CoApiDaily>>() {
+				}, date);
+
+		if (Objects.nonNull(responseEntity)) {
+			CoApiResponse resp = new CoApiResponse();
+			if (responseEntity.getStatusCode().is2xxSuccessful()) {
+				resp.setStatus(responseEntity.getStatusCode());
+				resp.setValues(responseEntity.getBody());
+				resp.setCount(responseEntity.getBody().size());
+			} else {
+				throw new ApiException(
+						new ErrorBo(responseEntity.getStatusCode(), responseEntity.getStatusCode().getReasonPhrase()));
 			}
 			return resp;
 		} else {

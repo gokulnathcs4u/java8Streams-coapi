@@ -132,5 +132,21 @@ public class CoApiController {
 		}
 		return new ResponseEntity<CoApiResponse>(resp, resp.getStatus());
 	}
+	
+	@GetMapping("/daily/{date}")
+	public ResponseEntity<CoApiResponse> getDailyDetailsByDate(@PathVariable(required = true) String date) 
+			throws CoApiException {
+		CoApiResponse resp = new CoApiResponse();
+		try {
+			resp = coApiService.getDailyDetailsByDate(date);
+		} catch (ApiException exception) {
+			throw new CoApiException(exception.getErrorBo().getErrorCode(), exception.getErrorBo().getDescription(),
+					exception);
+		} catch (Exception exception) {
+			throw new CoApiException(HttpStatus.SERVICE_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(),
+					exception);
+		}
+		return new ResponseEntity<CoApiResponse>(resp, resp.getStatus());
+	}
 
 }

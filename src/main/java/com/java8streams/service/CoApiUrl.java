@@ -18,5 +18,5 @@ public class CoApiUrl {
 	private String recovered;
 	private String deaths;
 	private String countries;
-
+	private String daily;
 }
