@@ -28,11 +28,13 @@ public class CoApiController {
 	@Autowired
 	private CoApiService coApiService;
 
+	
 	/**
 	 * Get details of all countries 
 	 * @return
 	 * @throws CoApiException
 	 */
+	
 	@GetMapping("/all/details")
 	public ResponseEntity<CoApiResponse> getAllDetails() throws CoApiException {
 		CoApiResponse resp = new CoApiResponse();
