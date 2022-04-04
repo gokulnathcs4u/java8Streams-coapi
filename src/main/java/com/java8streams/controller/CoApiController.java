@@ -16,7 +16,7 @@ import com.java8streams.response.CoApiResponse;
 import com.java8streams.service.CoApiService;
 
 /**
- * 
+ * Controller for getting details from mathroid api
  * @author GoCool
  *
  */
@@ -29,7 +29,7 @@ public class CoApiController {
 	private CoApiService coApiService;
 
 	/**
-	 * Get details of all countires 
+	 * Get details of all countries 
 	 * @return
 	 * @throws CoApiException
 	 */
@@ -49,7 +49,7 @@ public class CoApiController {
 	}
 
 	/**
-	 * 
+	 * Get details of all countries by province
 	 * @return
 	 * @throws CoApiException
 	 */
@@ -69,7 +69,7 @@ public class CoApiController {
 	}
 	
 	/**
-	 * 
+	 * Get details of all countries names
 	 * @return
 	 * @throws CoApiException
 	 */
@@ -90,7 +90,7 @@ public class CoApiController {
 	
 	
 	/**
-	 * 
+	 * Get details of all countries by name
 	 * @param name
 	 * @return
 	 * @throws CoApiException
@@ -111,7 +111,7 @@ public class CoApiController {
 	}
 	
 	/**
-	 * 
+	 * Get country details by name
 	 * @param name
 	 * @param filterVal
 	 * @return
@@ -133,6 +133,12 @@ public class CoApiController {
 		return new ResponseEntity<CoApiResponse>(resp, resp.getStatus());
 	}
 	
+	/**
+	 * Get daily details
+	 * @param date
+	 * @return
+	 * @throws CoApiException
+	 */
 	@GetMapping("/daily/{date}")
 	public ResponseEntity<CoApiResponse> getDailyDetailsByDate(@PathVariable(required = true) String date) 
 			throws CoApiException {
