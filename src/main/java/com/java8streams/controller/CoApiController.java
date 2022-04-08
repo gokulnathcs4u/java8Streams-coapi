@@ -15,11 +15,14 @@ import com.java8streams.exception.CoApiException;
 import com.java8streams.response.CoApiResponse;
 import com.java8streams.service.CoApiService;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Controller for getting details from mathroid api
  * @author GoCool
  *
  */
+@Slf4j
 @CrossOrigin
 @RestController
 @RequestMapping("/coapi")
@@ -37,16 +40,20 @@ public class CoApiController {
 	
 	@GetMapping("/all/details")
 	public ResponseEntity<CoApiResponse> getAllDetails() throws CoApiException {
+		log.info("Inside controller - before api call");
 		CoApiResponse resp = new CoApiResponse();
 		try {
 			resp = coApiService.getAllDetails();
 		} catch (ApiException exception) {
+			log.error("Inside controller ApiException {}",exception.getLocalizedMessage());
 			throw new CoApiException(exception.getErrorBo().getErrorCode(), exception.getErrorBo().getDescription(),
 					exception);
 		} catch (Exception exception) {
+			log.error("Inside controller Exception {}",exception.getLocalizedMessage());
 			throw new CoApiException(HttpStatus.SERVICE_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(),
 					exception);
 		}
+		log.info("Inside controller - after api call returned with {} values ", resp.getCount());
 		return new ResponseEntity<CoApiResponse>(resp, resp.getStatus());
 	}
 
